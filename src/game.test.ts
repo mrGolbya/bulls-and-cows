@@ -41,6 +41,21 @@ describe('game state', () => {
     });
   });
 
+  it('does not add the same guess to history more than once', () => {
+    const initial = createGameState('1234', 4, 10, 1000);
+    const first = submitGuess(initial, '5678', 2000);
+
+    if (!first.ok) {
+      throw new Error('Expected the first guess to be accepted.');
+    }
+
+    expect(submitGuess(first.state, '5678', 3000)).toEqual({
+      ok: false,
+      state: first.state,
+      reason: 'duplicate-guess',
+    });
+  });
+
   it('finishes the game when the guess matches the secret', () => {
     const initial = createGameState('a2F9', 4, 16, 1000);
     const result = submitGuess(initial, 'A2f9', 2500);
