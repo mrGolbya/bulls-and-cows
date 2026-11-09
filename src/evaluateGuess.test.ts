@@ -11,7 +11,7 @@ describe('evaluateGuess', () => {
   });
 
   it('counts bulls and cows without counting bulls as cows', () => {
-    expect(evaluateGuess('1234', '1325')).toEqual({ bulls: 2, cows: 1 });
+    expect(evaluateGuess('1234', '1325')).toEqual({ bulls: 1, cows: 2 });
   });
 
   it('returns zero bulls and cows when there are no matching digits', () => {
@@ -26,6 +26,6 @@ describe('evaluateGuess', () => {
   });
 
   it('compares hexadecimal letters without regard to case', () => {
-    expect(evaluateGuess('a2F9', 'A9f0')).toEqual({ bulls: 1, cows: 2 });
+    expect(evaluateGuess('a2F9', 'A9f0')).toEqual({ bulls: 2, cows: 1 });
   });
 });
