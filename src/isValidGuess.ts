@@ -2,7 +2,7 @@ import { createDigitValidator } from './createDigitValidator.js';
 
 /**
  * Checks that a guess has the required length and unique digits for its base.
- * Time complexity: O(n); space complexity: O(n).
+ * Time complexity: O(n * base); space complexity: O(n + base).
  */
 export function isValidGuess(
   guess: string,

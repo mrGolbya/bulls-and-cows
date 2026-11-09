@@ -263,16 +263,14 @@ export function mountGame(document: Document): void {
 
       input.addEventListener('input', () => {
         const isValidDigit = createDigitValidator(currentGame.base);
-        const seen = new Set<string>();
         const filtered = [...input.value]
-          .filter((digit) => {
-            const normalized = digit.toLowerCase();
-            if (!isValidDigit(digit) || seen.has(normalized)) {
-              return false;
-            }
-            seen.add(normalized);
-            return true;
-          })
+          .filter(
+            (digit, index, digits) =>
+              isValidDigit(digit) &&
+              digits.findIndex(
+                (candidate) => candidate.toLowerCase() === digit.toLowerCase(),
+              ) === index,
+          )
           .slice(0, currentGame.length)
           .join('');
         if (input.value !== filtered) {
@@ -295,7 +293,9 @@ export function mountGame(document: Document): void {
           errorMessage.textContent =
             result.reason === 'invalid-guess'
               ? `Введите ${currentGame.length} уникальные допустимые цифры.`
-              : 'Игра уже завершена.';
+              : result.reason === 'duplicate-guess'
+                ? 'Эта попытка уже была.'
+                : 'Игра уже завершена.';
           return;
         }
 
