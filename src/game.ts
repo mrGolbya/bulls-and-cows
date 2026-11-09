@@ -23,7 +23,7 @@ export type SubmitGuessResult =
   | {
       ok: false;
       state: GameState;
-      reason: 'invalid-guess' | 'game-over';
+      reason: 'invalid-guess' | 'game-over' | 'duplicate-guess';
     };
 
 /**
@@ -62,6 +62,13 @@ export function submitGuess(
 
   if (!isValidGuess(guess, state.length, state.base)) {
     return { ok: false, state, reason: 'invalid-guess' };
+  }
+
+  const normalizedGuess = guess.toLowerCase();
+  if (
+    state.history.some((entry) => entry.guess.toLowerCase() === normalizedGuess)
+  ) {
+    return { ok: false, state, reason: 'duplicate-guess' };
   }
 
   const { bulls, cows } = evaluateGuess(state.secret, guess);
