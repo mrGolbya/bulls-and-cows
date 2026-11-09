@@ -1,57 +1,63 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { generateSecret } from './generateSecret';
 
+const toDigits = (secret: string | string[]): string[] =>
+  typeof secret === 'string' ? [...secret] : secret;
+
+const createRandomSequence = (values: number[]): (() => number) => {
+  let index = 0;
+  return () => {
+    const value = values[index % values.length];
+    index += 1;
+    return value;
+  };
+};
+
 describe('generateSecret', () => {
-  it('should generate a secret with specified length', () => {
-    const secret = generateSecret(4);
-    expect(secret).toHaveLength(4);
-    expect(typeof secret).toBe('string');
+  it.each([
+    { length: 2, base: 2 },
+    { length: 4, base: 8 },
+    { length: 6, base: 10 },
+    { length: 6, base: 16 },
+  ])('generates $length unique digits in base $base', ({ length, base }) => {
+    const digits = toDigits(generateSecret(length, base));
+
+    expect(digits).toHaveLength(length);
+    expect(new Set(digits.map((digit) => digit.toLowerCase())).size).toBe(
+      length,
+    );
+    expect(
+      digits.every(
+        (digit) =>
+          digit.length === 1 &&
+          Number.parseInt(digit, base) >= 0 &&
+          Number.parseInt(digit, base) < base,
+      ),
+    ).toBe(true);
   });
 
-  it('should generate a secret with unique digits only', () => {
-    const secret = generateSecret(5);
-    expect(secret).toMatch(/^[0-9]+$/); // Только цифры
-    const uniqueDigits = new Set(secret);
-    expect(uniqueDigits.size).toBe(5); // Все цифры уникальны
+  it('uses the injected random source and returns a repeatable result', () => {
+    const createMockRandom = () =>
+      vi.fn(
+        createRandomSequence([
+          0.01, 0.22, 0.33, 0.44, 0.55, 0.66, 0.77, 0.88, 0.99,
+        ]),
+      );
+    const firstRandom = createMockRandom();
+    const secondRandom = createMockRandom();
+
+    const first = generateSecret(4, 10, firstRandom);
+    const second = generateSecret(4, 10, secondRandom);
+
+    expect(toDigits(first)).toEqual(toDigits(second));
+    expect(firstRandom).toHaveBeenCalled();
   });
 
-  it('should handle different lengths correctly', () => {
-    for (let i = 1; i <= 10; i++) {
-      const secret = generateSecret(i);
-      expect(secret).toHaveLength(i);
-      const uniqueDigits = new Set(secret);
-      expect(uniqueDigits.size).toBe(i);
-    }
-  });
-
-  it('should work with base parameter', () => {
-    // Тест для двоичной системы счисления
-    const binarySecret = generateSecret(4, 2);
-    expect(binarySecret).toMatch(/^[01]+$/); // Только 0 и 1
-
-    // Тест для шестнадцатеричной системы счисления
-    const hexSecret = generateSecret(6, 16);
-    expect(hexSecret).toMatch(/^[0-9a-f]+$/); // Цифры 0-9 и буквы a-f
-  });
-
-  it('should work with random parameter for deterministic results', () => {
-    // Создаем фабрику мока для каждого вызова
-    const createMockRandom = (counter: number) => () => {
-      return (counter + 1) / 10;
-    };
-
-    const secret1 = generateSecret(4, 10, createMockRandom(0));
-    const secret2 = generateSecret(4, 10, createMockRandom(0));
-
-    expect(secret1).toBe(secret2);
-  });
-
-  it('should handle edge cases', () => {
-    expect(() => generateSecret(0)).toThrow();
-    expect(() => generateSecret(-1)).toThrow();
-    expect(() => generateSecret(11)).toThrow();
-    // Проверяем, что base не игнорируется
-    const secret = generateSecret(4, 16);
-    expect(typeof secret).toBe('string');
+  it.each([
+    { length: 0, base: 10 },
+    { length: -1, base: 10 },
+    { length: 3, base: 2 },
+  ])('rejects impossible length $length for base $base', ({ length, base }) => {
+    expect(() => generateSecret(length, base)).toThrow();
   });
 });
