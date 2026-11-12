@@ -14,8 +14,23 @@ The project is split between pure game logic and browser UI:
   `localStorage`.
 
 The secret and guesses are strings of radix digits. Keeping them as strings
-preserves leading zeroes. A game state contains the round settings, status,
-timestamps, and an immutable history of guess records.
+preserves leading zeroes, which are significant digits in a fixed-length
+secret. A `GameState` stores the secret, selected length and base, current
+status, start and finish timestamps, and `history: GuessRecord[]`. The history
+is an ordered array because guesses are events in submission order: rendering
+the round history is a direct iteration, and its length gives the attempt
+count. Each submission creates a new array (`[...history, entry]`), so previous
+state snapshots remain unchanged and can be safely inspected or tested.
+
+The leaderboard uses one persisted array of `ScoreRecord` objects, rather than
+separate lists or storage keys for each game mode. Each record includes
+`attempts`, `durationMs`, `length`, `base`, and `completedAt`; length and base
+let the same table display the context of every result. A single list provides
+one consistent ranking across modes and keeps persistence and rendering
+simple. Records are ranked first by fewer attempts and then by shorter time,
+and only the top ten are retained by default. This is a deliberate global
+ranking: the selected mode is shown as record metadata, not used to partition
+or normalize scores.
 
 ## Algorithms and complexity
 
@@ -55,6 +70,7 @@ validator. Creation uses `O(b)` time and space; each predicate call uses
 
 ## Test-driven development
 
-Each required core function has a test commit before its implementation commit.
+Each core function has a test commit before its implementation commit. The
+commit hashes and ordering are listed in the README's TDD evidence section.
 The test runner is Vitest; `npm test` executes the suite, and the Husky
 pre-push hook runs it before publishing commits.
